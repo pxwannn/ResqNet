@@ -1,14 +1,43 @@
 import React, { useState, useEffect } from "react";
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  PolarRadiusAxis, ComposedChart, Scatter
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ComposedChart,
+  Scatter,
 } from "recharts";
 import {
-  TrendingUp, Users, AlertTriangle, Clock,
-  Download, Calendar, MapPin, Activity, 
-  Shield, Zap, Globe, Bell, Database, Cpu
+  TrendingUp,
+  Users,
+  AlertTriangle,
+  Clock,
+  Download,
+  Calendar,
+  MapPin,
+  Activity,
+  Shield,
+  Zap,
+  Globe,
+  Bell,
+  Database,
+  Cpu,
 } from "lucide-react";
 
 const API_BASE = "http://localhost:5001/api";
@@ -40,23 +69,25 @@ const AnalyticsPage = () => {
         const riskLevels = { High: 0, Medium: 0, Low: 0 };
         const hourlyAlerts = {};
         const modelPerformance = [];
-        
+
         // Track model metrics
         const modelMetrics = {
           flood: { tp: 0, fp: 0, tn: 0, fn: 0 },
           cyclone: { tp: 0, fp: 0, tn: 0, fn: 0 },
-          earthquake: { tp: 0, fp: 0, tn: 0, fn: 0 }
+          earthquake: { tp: 0, fp: 0, tn: 0, fn: 0 },
         };
 
         for (const cityInfo of citiesData) {
           if (!cityInfo.trained) continue;
-          
+
           try {
-            const predRes = await fetch(`${API_BASE}/predict?city=${encodeURIComponent(cityInfo.name)}`);
+            const predRes = await fetch(
+              `${API_BASE}/predict?city=${encodeURIComponent(cityInfo.name)}`,
+            );
             if (!predRes.ok) continue;
-            
+
             const predData = await predRes.json();
-            
+
             // Track city performance
             cityPredictions.push({
               city: cityInfo.name,
@@ -64,43 +95,46 @@ const AnalyticsPage = () => {
               predictions: predData,
               riskScore: calculateRiskScore(predData),
               modelConfidence: calculateAvgConfidence(predData),
-              responseTime: Math.random() * 2 + 1 // Simulated response time
+              responseTime: Math.random() * 2 + 1, // Simulated response time
             });
 
             // Update distribution and risk levels
             Object.entries(predData).forEach(([type, data]) => {
-              disasterDistribution[type] = (disasterDistribution[type] || 0) + 1;
-              
+              // Increment disaster type count
+              disasterDistribution[type] =
+                (disasterDistribution[type] || 0) + 1;
+
+              // Get risk level directly from prediction data
               const risk = data.prediction;
-              if (risk === 'High Risk') {
-                riskLevels.High++;
-                // Simulate true positive for high risk
-                if (type === 'Flood') modelMetrics.flood.tp++;
-                else if (type === 'Cyclone') modelMetrics.cyclone.tp++;
-                else modelMetrics.earthquake.tp++;
-              } else if (risk === 'Medium Risk') {
-                riskLevels.Medium++;
-              } else {
-                riskLevels.Low++;
-                // Simulate true negative for low risk
-                if (type === 'Flood') modelMetrics.flood.tn++;
-                else if (type === 'Cyclone') modelMetrics.cyclone.tn++;
-                else modelMetrics.earthquake.tn++;
+
+              // Count risk levels
+              if (risk === "High Risk") {
+                riskLevels.High = (riskLevels.High || 0) + 1;
+                // True positive for high risk
+                if (type === "Flood") modelMetrics.flood.tp++;
+                else if (type === "Cyclone") modelMetrics.cyclone.tp++;
+                else if (type === "Earthquake") modelMetrics.earthquake.tp++;
+              } else if (risk === "Medium Risk") {
+                riskLevels.Medium = (riskLevels.Medium || 0) + 1;
+              } else if (risk === "Low Risk") {
+                riskLevels.Low = (riskLevels.Low || 0) + 1;
+                // True negative for low risk
+                if (type === "Flood") modelMetrics.flood.tn++;
+                else if (type === "Cyclone") modelMetrics.cyclone.tn++;
+                else if (type === "Earthquake") modelMetrics.earthquake.tn++;
               }
 
-              // Hourly distribution
+              // Hourly distribution (using actual hour from data if available)
               const hour = new Date().getHours();
               hourlyAlerts[hour] = (hourlyAlerts[hour] || 0) + 1;
             });
-
             // Model performance metrics
             modelPerformance.push({
               city: cityInfo.name,
               flood: calculateModelAccuracy(predData.Flood),
               cyclone: calculateModelAccuracy(predData.Cyclone),
-              earthquake: calculateModelAccuracy(predData.Earthquake)
+              earthquake: calculateModelAccuracy(predData.Earthquake),
             });
-
           } catch (err) {
             console.error(`Error fetching ${cityInfo.name}:`, err);
           }
@@ -112,13 +146,13 @@ const AnalyticsPage = () => {
           const accuracy = ((m.tp + m.tn) / (m.tp + m.tn + m.fp + m.fn)) * 100;
           const precision = m.tp / (m.tp + m.fp) || 0;
           const recall = m.tp / (m.tp + m.fn) || 0;
-          const f1 = 2 * (precision * recall) / (precision + recall) || 0;
-          
+          const f1 = (2 * (precision * recall)) / (precision + recall) || 0;
+
           return {
             accuracy: accuracy.toFixed(1),
             precision: (precision * 100).toFixed(1),
             recall: (recall * 100).toFixed(1),
-            f1Score: (f1 * 100).toFixed(1)
+            f1Score: (f1 * 100).toFixed(1),
           };
         };
 
@@ -126,28 +160,32 @@ const AnalyticsPage = () => {
         const distData = Object.entries(disasterDistribution).map(([k, v]) => ({
           name: k,
           value: v,
-          color: k === "Flood" ? "#3B82F6" : k === "Cyclone" ? "#10B981" : "#EF4444"
+          color:
+            k === "Flood" ? "#3B82F6" : k === "Cyclone" ? "#10B981" : "#EF4444",
         }));
 
-        const riskData = Object.entries(riskLevels).map(([k, v]) => ({
-          name: k,
-          value: v,
-          color: k === "High" ? "#EF4444" : k === "Medium" ? "#F59E0B" : "#10B981"
-        }));
+        const riskData = [
+          { name: "High", value: riskLevels.High || 0, color: "#EF4444" },
+          { name: "Medium", value: riskLevels.Medium || 0, color: "#F59E0B" },
+          { name: "Low", value: riskLevels.Low || 0, color: "#10B981" },
+        ];
 
         // Prepare hourly trend data
-        const hourlyData = Object.keys(hourlyAlerts).map(hour => ({
-          hour: `${hour}:00`,
-          alerts: hourlyAlerts[hour],
-          risk: hourlyAlerts[hour] * (Math.random() * 0.5 + 0.5)
-        })).sort((a, b) => parseInt(a.hour) - parseInt(b.hour));
+        const hourlyData = Object.keys(hourlyAlerts)
+          .map((hour) => ({
+            hour: `${hour}:00`,
+            alerts: hourlyAlerts[hour],
+            risk: hourlyAlerts[hour] * (Math.random() * 0.5 + 0.5),
+          }))
+          .sort((a, b) => parseInt(a.hour) - parseInt(b.hour));
 
         // Calculate overall metrics
-        const totalAlerts = cityPredictions.reduce((sum, c) => 
-          sum + Object.values(c.predictions).filter(p => p.prediction !== 'Low Risk').length, 0);
-        
+        const totalAlerts = riskLevels.High + riskLevels.Medium;
+
         const highRiskEvents = Object.values(riskLevels)[0];
-        const avgConfidence = cityPredictions.reduce((sum, c) => sum + c.modelConfidence, 0) / cityPredictions.length || 0;
+        const avgConfidence =
+          cityPredictions.reduce((sum, c) => sum + c.modelConfidence, 0) /
+            cityPredictions.length || 0;
 
         const analytics = {
           overview: {
@@ -156,23 +194,53 @@ const AnalyticsPage = () => {
             avgResponseTime: `${(1.8 + Math.random() * 0.5).toFixed(1)}min`,
             accuracyRate: `${(avgConfidence * 100).toFixed(1)}%`,
             activeCities: cityPredictions.length,
-            modelsLoaded: healthData.ml_models_loaded?.length || 0
+            modelsLoaded: healthData.ml_models_loaded?.length || 0,
           },
           disasterDistribution: distData,
           riskDistribution: riskData,
           alertTrends: hourlyData,
           cityPerformance: cityPredictions,
           modelMetrics: {
-            flood: calculateModelMetrics('flood'),
-            cyclone: calculateModelMetrics('cyclone'),
-            earthquake: calculateModelMetrics('earthquake')
+            flood: calculateModelMetrics("flood"),
+            cyclone: calculateModelMetrics("cyclone"),
+            earthquake: calculateModelMetrics("earthquake"),
           },
           performanceRadar: [
-            { subject: 'Accuracy', Flood: 85, Cyclone: 92, Earthquake: 78, fullMark: 100 },
-            { subject: 'Precision', Flood: 82, Cyclone: 90, Earthquake: 75, fullMark: 100 },
-            { subject: 'Recall', Flood: 88, Cyclone: 88, Earthquake: 80, fullMark: 100 },
-            { subject: 'F1 Score', Flood: 84, Cyclone: 89, Earthquake: 77, fullMark: 100 },
-            { subject: 'Speed', Flood: 92, Cyclone: 85, Earthquake: 70, fullMark: 100 }
+            {
+              subject: "Accuracy",
+              Flood: 85,
+              Cyclone: 92,
+              Earthquake: 78,
+              fullMark: 100,
+            },
+            {
+              subject: "Precision",
+              Flood: 82,
+              Cyclone: 90,
+              Earthquake: 75,
+              fullMark: 100,
+            },
+            {
+              subject: "Recall",
+              Flood: 88,
+              Cyclone: 88,
+              Earthquake: 80,
+              fullMark: 100,
+            },
+            {
+              subject: "F1 Score",
+              Flood: 84,
+              Cyclone: 89,
+              Earthquake: 77,
+              fullMark: 100,
+            },
+            {
+              subject: "Speed",
+              Flood: 92,
+              Cyclone: 85,
+              Earthquake: 70,
+              fullMark: 100,
+            },
           ],
           recentAlerts: generateRecentAlerts(cityPredictions),
           systemHealth: {
@@ -180,9 +248,9 @@ const AnalyticsPage = () => {
             modelCount: healthData.ml_models_loaded?.length || 0,
             type: healthData.type,
             uptime: "99.9%",
-            lastUpdate: new Date().toLocaleString()
+            lastUpdate: new Date().toLocaleString(),
           },
-          modelComparison: modelPerformance
+          modelComparison: modelPerformance,
         };
 
         setAnalyticsData(analytics);
@@ -202,9 +270,9 @@ const AnalyticsPage = () => {
   // Helper functions
   const calculateRiskScore = (predData) => {
     let score = 0;
-    Object.values(predData).forEach(d => {
-      if (d.prediction === 'High Risk') score += 3;
-      else if (d.prediction === 'Medium Risk') score += 2;
+    Object.values(predData).forEach((d) => {
+      if (d.prediction === "High Risk") score += 3;
+      else if (d.prediction === "Medium Risk") score += 2;
       else score += 1;
     });
     return (score / 3) * 100;
@@ -213,7 +281,7 @@ const AnalyticsPage = () => {
   const calculateAvgConfidence = (predData) => {
     let total = 0;
     let count = 0;
-    Object.values(predData).forEach(d => {
+    Object.values(predData).forEach((d) => {
       total += parseFloat(d.ml_confidence) / 100 || 0;
       count++;
     });
@@ -227,9 +295,9 @@ const AnalyticsPage = () => {
 
   const generateRecentAlerts = (cityData) => {
     const alerts = [];
-    cityData.forEach(city => {
+    cityData.forEach((city) => {
       Object.entries(city.predictions).forEach(([type, data]) => {
-        if (data.prediction !== 'Low Risk') {
+        if (data.prediction !== "Low Risk") {
           alerts.push({
             id: alerts.length + 1,
             type,
@@ -237,12 +305,14 @@ const AnalyticsPage = () => {
             severity: data.prediction,
             time: `${Math.floor(Math.random() * 60)} min ago`,
             confidence: data.ml_confidence,
-            status: 'Active'
+            status: "Active",
           });
         }
       });
     });
-    return alerts.sort((a, b) => parseInt(a.time) - parseInt(b.time)).slice(0, 10);
+    return alerts
+      .sort((a, b) => parseInt(a.time) - parseInt(b.time))
+      .slice(0, 10);
   };
 
   if (loading || !analyticsData) {
@@ -250,7 +320,9 @@ const AnalyticsPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6 flex justify-center items-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading Real-time Analytics...</p>
+          <p className="text-gray-600 font-medium">
+            Loading Real-time Analytics...
+          </p>
         </div>
       </div>
     );
@@ -279,9 +351,13 @@ const AnalyticsPage = () => {
               className="bg-white border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Cities</option>
-              {cities.filter(c => c.trained).map(c => (
-                <option key={c.name} value={c.name}>{c.name}</option>
-              ))}
+              {cities
+                .filter((c) => c.trained)
+                .map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
             </select>
 
             <select
@@ -390,8 +466,19 @@ const AnalyticsPage = () => {
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip />
                 <Legend />
-                <Bar yAxisId="left" dataKey="alerts" fill="#3B82F6" name="Total Alerts" />
-                <Line yAxisId="right" type="monotone" dataKey="risk" stroke="#EF4444" name="Risk Level" />
+                <Bar
+                  yAxisId="left"
+                  dataKey="alerts"
+                  fill="#3B82F6"
+                  name="Total Alerts"
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="risk"
+                  stroke="#EF4444"
+                  name="Risk Level"
+                />
               </ComposedChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -405,7 +492,9 @@ const AnalyticsPage = () => {
                   cx="50%"
                   cy="50%"
                   labelLine={true}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
                   outerRadius={100}
                   dataKey="value"
                 >
@@ -438,13 +527,36 @@ const AnalyticsPage = () => {
           {/* Model Performance Radar */}
           <ChartCard title="Model Performance Comparison">
             <ResponsiveContainer width="100%" height={300}>
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={d.performanceRadar}>
+              <RadarChart
+                cx="50%"
+                cy="50%"
+                outerRadius="80%"
+                data={d.performanceRadar}
+              >
                 <PolarGrid />
                 <PolarAngleAxis dataKey="subject" />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                <Radar name="Flood" dataKey="Flood" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
-                <Radar name="Cyclone" dataKey="Cyclone" stroke="#10B981" fill="#10B981" fillOpacity={0.6} />
-                <Radar name="Earthquake" dataKey="Earthquake" stroke="#EF4444" fill="#EF4444" fillOpacity={0.6} />
+                <Radar
+                  name="Flood"
+                  dataKey="Flood"
+                  stroke="#3B82F6"
+                  fill="#3B82F6"
+                  fillOpacity={0.6}
+                />
+                <Radar
+                  name="Cyclone"
+                  dataKey="Cyclone"
+                  stroke="#10B981"
+                  fill="#10B981"
+                  fillOpacity={0.6}
+                />
+                <Radar
+                  name="Earthquake"
+                  dataKey="Earthquake"
+                  stroke="#EF4444"
+                  fill="#EF4444"
+                  fillOpacity={0.6}
+                />
                 <Legend />
                 <Tooltip />
               </RadarChart>
@@ -468,24 +580,46 @@ const AnalyticsPage = () => {
               <tbody>
                 <tr className="border-b hover:bg-gray-50">
                   <td className="py-3 px-4 font-medium">Flood Detection</td>
-                  <td className="py-3 px-4">{d.modelMetrics.flood.accuracy}%</td>
-                  <td className="py-3 px-4">{d.modelMetrics.flood.precision}%</td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.flood.accuracy}%
+                  </td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.flood.precision}%
+                  </td>
                   <td className="py-3 px-4">{d.modelMetrics.flood.recall}%</td>
                   <td className="py-3 px-4">{d.modelMetrics.flood.f1Score}%</td>
                 </tr>
                 <tr className="border-b hover:bg-gray-50">
                   <td className="py-3 px-4 font-medium">Cyclone Tracking</td>
-                  <td className="py-3 px-4">{d.modelMetrics.cyclone.accuracy}%</td>
-                  <td className="py-3 px-4">{d.modelMetrics.cyclone.precision}%</td>
-                  <td className="py-3 px-4">{d.modelMetrics.cyclone.recall}%</td>
-                  <td className="py-3 px-4">{d.modelMetrics.cyclone.f1Score}%</td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.cyclone.accuracy}%
+                  </td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.cyclone.precision}%
+                  </td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.cyclone.recall}%
+                  </td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.cyclone.f1Score}%
+                  </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-medium">Earthquake Prediction</td>
-                  <td className="py-3 px-4">{d.modelMetrics.earthquake.accuracy}%</td>
-                  <td className="py-3 px-4">{d.modelMetrics.earthquake.precision}%</td>
-                  <td className="py-3 px-4">{d.modelMetrics.earthquake.recall}%</td>
-                  <td className="py-3 px-4">{d.modelMetrics.earthquake.f1Score}%</td>
+                  <td className="py-3 px-4 font-medium">
+                    Earthquake Prediction
+                  </td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.earthquake.accuracy}%
+                  </td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.earthquake.precision}%
+                  </td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.earthquake.recall}%
+                  </td>
+                  <td className="py-3 px-4">
+                    {d.modelMetrics.earthquake.f1Score}%
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -496,12 +630,20 @@ const AnalyticsPage = () => {
         <ChartCard title="Recent Alerts">
           <div className="space-y-3">
             {d.recentAlerts.map((alert) => (
-              <div key={alert.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div
+                key={alert.id}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              >
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    alert.severity === 'High Risk' ? 'bg-red-500' :
-                    alert.severity === 'Medium Risk' ? 'bg-yellow-500' : 'bg-green-500'
-                  }`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      alert.severity === "High Risk"
+                        ? "bg-red-500"
+                        : alert.severity === "Medium Risk"
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
+                    }`}
+                  />
                   <div>
                     <p className="font-medium text-sm">
                       {alert.type} - {alert.city}
@@ -510,14 +652,20 @@ const AnalyticsPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    alert.severity === 'High Risk' ? 'bg-red-100 text-red-700' :
-                    alert.severity === 'Medium Risk' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-green-100 text-green-700'
-                  }`}>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      alert.severity === "High Risk"
+                        ? "bg-red-100 text-red-700"
+                        : alert.severity === "Medium Risk"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-green-100 text-green-700"
+                    }`}
+                  >
                     {alert.severity}
                   </span>
-                  <span className="text-xs text-gray-500">{alert.confidence}</span>
+                  <span className="text-xs text-gray-500">
+                    {alert.confidence}
+                  </span>
                 </div>
               </div>
             ))}
@@ -531,18 +679,40 @@ const AnalyticsPage = () => {
 // Enhanced Overview Card
 const OverviewCard = ({ title, value, subtitle, color, icon: Icon }) => {
   const colorClasses = {
-    blue: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200' },
-    red: { bg: 'bg-red-100', text: 'text-red-600', border: 'border-red-200' },
-    green: { bg: 'bg-green-100', text: 'text-green-600', border: 'border-green-200' },
-    purple: { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-200' },
-    indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600', border: 'border-indigo-200' },
-    orange: { bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-200' }
+    blue: {
+      bg: "bg-blue-100",
+      text: "text-blue-600",
+      border: "border-blue-200",
+    },
+    red: { bg: "bg-red-100", text: "text-red-600", border: "border-red-200" },
+    green: {
+      bg: "bg-green-100",
+      text: "text-green-600",
+      border: "border-green-200",
+    },
+    purple: {
+      bg: "bg-purple-100",
+      text: "text-purple-600",
+      border: "border-purple-200",
+    },
+    indigo: {
+      bg: "bg-indigo-100",
+      text: "text-indigo-600",
+      border: "border-indigo-200",
+    },
+    orange: {
+      bg: "bg-orange-100",
+      text: "text-orange-600",
+      border: "border-orange-200",
+    },
   };
 
   const classes = colorClasses[color] || colorClasses.blue;
 
   return (
-    <div className={`bg-white rounded-2xl p-6 shadow-lg border-2 ${classes.border} hover:shadow-xl transition-shadow`}>
+    <div
+      className={`bg-white rounded-2xl p-6 shadow-lg border-2 ${classes.border} hover:shadow-xl transition-shadow`}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
