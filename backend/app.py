@@ -3,6 +3,7 @@ import json
 import random
 import joblib
 import pandas as pd
+from dotenv import load_dotenv
 import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -44,62 +45,11 @@ def load_city_models(city_name):
     
     return models if models else None
 
-# def get_real_current_weather(city):
-#     """Get REAL current weather data from OpenWeatherMap"""
-#     OWM_API_KEY = "e9905c8b9429d45e17d7c3f168f30db2"  # Your API key
-    
-#     try:
-#         # Current weather
-#         current_url = "https://api.openweathermap.org/data/2.5/weather"
-#         # params = {
-#         #     'q': city,
-#         #     'appid': OWM_API_KEY,
-#         #     'units': 'metric'
-#         # }
-#         coords = CITY_COORDS_LOOKUP.get(city)
-#         if not coords:
-#             raise ValueError(f"Coordinates not found for city: {city}")
 
-#         params = {
-#             'lat': coords['lat'],
-#             'lon': coords['lon'],
-#             'appid': OWM_API_KEY,
-#             'units': 'metric'
-#         }
-        
-#         response = requests.get(current_url, params=params, timeout=10)
-#         response.raise_for_status()
-#         current_data = response.json()
-        
-#         # Forecast for additional features
-#         forecast_url = "https://api.openweathermap.org/data/2.5/forecast"
-#         forecast_response = requests.get(forecast_url, params=params, timeout=10)
-#         forecast_data = forecast_response.json() if forecast_response.ok else None
-        
-#         # Extract current weather
-#         current_weather = {
-#             'temperature': current_data['main']['temp'],
-#             'temp_max': current_data['main']['temp_max'],
-#             'temp_min': current_data['main']['temp_min'],
-#             'precipitation': current_data.get('rain', {}).get('1h', 0) or current_data.get('snow', {}).get('1h', 0) or 0,
-#             'wind_speed': current_data['wind']['speed'] * 3.6,  # m/s to km/h
-#             'wind_max': current_data['wind'].get('gust', current_data['wind']['speed']) * 3.6,
-#             'humidity': current_data['main']['humidity'],
-#             'pressure': current_data['main']['pressure'],
-#             'cloud_cover': current_data['clouds']['all'],
-#             'solar_radiation': estimate_solar_radiation(current_data),
-#             'date': datetime.now()
-#         }
-        
-#         print(f"🌤️ Real weather data fetched for {city}")
-#         return current_weather
-        
-#     except Exception as e:
-#         print(f"❌ Weather API failed: {e}")
-#         return get_fallback_weather(city)
+
 def get_real_current_weather(city):
     """Get REAL current weather data from OpenWeatherMap"""
-    OWM_API_KEY = "e9905c8b9429d45e17d7c3f168f30db2"  # Your API key
+    OWM_API_KEY = os.getenv("OPENWEATHER_API_KEY")  # Your API key
     
     try:
         # ✅ Ensure coordinates exist
